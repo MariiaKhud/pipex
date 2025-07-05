@@ -6,26 +6,24 @@
 /*   By: makhudon <makhudon@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/04 13:02:37 by makhudon          #+#    #+#             */
-/*   Updated: 2025/07/04 14:32:03 by makhudon         ###   ########.fr       */
+/*   Updated: 2025/07/05 15:34:41 by makhudon         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../libft/libft.h"
 #include "../src/pipex.h"
 
-/* Print perror(msg) then exit(EXIT_FAILURE) */
 void	error_exit(const char *msg)
 {
 	perror(msg);
 	exit(EXIT_FAILURE);
 }
 
-/* Print msg to stderr then exit(EXIT_FAILURE) */
 void	error_msg_exit(const char *msg)
 {
-	ft_putstr_fd("pipex: ", 2);
-	ft_putstr_fd((char *)msg, 2);
-	ft_putstr_fd("\n", 2);
+	ft_putstr_fd("pipex: ", STDERR_FILENO);
+	ft_putstr_fd((char *)msg, STDERR_FILENO);
+	ft_putstr_fd("\n", STDERR_FILENO);
 	exit(EXIT_FAILURE);
 }
 
@@ -45,16 +43,15 @@ static char	*join_path(const char *dir, const char *cmd)
 	return (full);
 }
 
-/* Given cmd (e.g. "ls") and array of PATH dirs, return full path or NULL */
-char	*find_cmd_path(char *cmd, char **paths)
+char	*find_cmd_path(char *cmd, char **path_dirs)
 {
 	char	*full;
 	int		i;
 
 	i = 0;
-	while (paths && paths[i])
+	while (path_dirs && path_dirs[i])
 	{
-		full = join_path(paths[i], cmd);
+		full = join_path(path_dirs[i], cmd);
 		if (!full)
 			error_exit("malloc");
 		if (access(full, X_OK) == 0)
@@ -65,7 +62,6 @@ char	*find_cmd_path(char *cmd, char **paths)
 	return (ft_strdup(cmd));
 }
 
-/* Free a NULL-terminated array of strings */
 void	free_split(char **array)
 {
 	int	i;

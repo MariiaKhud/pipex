@@ -6,14 +6,14 @@
 /*   By: makhudon <makhudon@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/04 13:55:56 by makhudon          #+#    #+#             */
-/*   Updated: 2025/07/04 14:31:26 by makhudon         ###   ########.fr       */
+/*   Updated: 2025/07/05 15:30:13 by makhudon         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../libft/libft.h"
 #include "../src/pipex.h"
 
-static void	handle_execve_error(char *cmd_path, char **args, char **paths)
+static void	handle_execve_error(char *cmd_path, char **args, char **path_dirs)
 {
 	int	exit_status;
 
@@ -28,26 +28,25 @@ static void	handle_execve_error(char *cmd_path, char **args, char **paths)
 		perror(cmd_path);
 		exit_status = 1;
 	}
-	free_split(paths);
+	free_split(path_dirs);
 	free_split(args);
 	free(cmd_path);
 	exit(exit_status);
 }
 
-static void	execute_cmd(char *cmd_p, char **args, char **paths, char **envp)
+static void	execute_cmd(char *cmd_p, char **args, char **path_dirs, char **envp)
 {
 	if (!cmd_p)
 	{
-		free_split(paths);
+		free_split(path_dirs);
 		free_split(args);
 		error_msg_exit(args[0]);
 	}
 	execve(cmd_p, args, envp);
-	handle_execve_error(cmd_p, args, paths);
+	handle_execve_error(cmd_p, args, path_dirs);
 }
 
-/* Split PATH into an array of directories */
-static char	**get_paths(char **envp)
+static char	**get_path_dirs(char **envp)
 {
 	int		i;
 	char	*path_value;
@@ -55,7 +54,7 @@ static char	**get_paths(char **envp)
 	i = 0;
 	while (envp[i] && ft_strncmp(envp[i], "PATH=", 5))
 		i++;
-	if (!envp[i])
+	if (envp[i] == NULL)
 		return (NULL);
 	path_value = envp[i] + 5;
 	return (ft_split(path_value, ':'));
@@ -65,7 +64,7 @@ void	run_last_child(int pipe_fd[2], char **argv, char **envp)
 {
 	int		output_fd;
 	char	**args;
-	char	**paths;
+	char	**path_dirs;
 	char	*cmd_path;
 
 	output_fd = open(argv[1], O_CREAT | O_WRONLY | O_TRUNC, 0644);
@@ -77,18 +76,18 @@ void	run_last_child(int pipe_fd[2], char **argv, char **envp)
 	close(pipe_fd[1]);
 	close(output_fd);
 	args = ft_split(argv[0], ' ');
-	if (!args || !*args)
+	if (args == NULL || args[0] == NULL)
 		error_msg_exit("command parse error");
-	paths = get_paths(envp);
-	cmd_path = find_cmd_path(args[0], paths);
-	execute_cmd(cmd_path, args, paths, envp);
+	path_dirs = get_path_dirs(envp);
+	cmd_path = find_cmd_path(args[0], path_dirs);
+	execute_cmd(cmd_path, args, path_dirs, envp);
 }
 
 void	run_first_child(int pipe_fd[2], char **argv, char **envp)
 {
 	int		input_fd;
 	char	**args;
-	char	**paths;
+	char	**path_dirs;
 	char	*cmd_path;
 
 	input_fd = open(argv[0], O_RDONLY);
@@ -100,9 +99,9 @@ void	run_first_child(int pipe_fd[2], char **argv, char **envp)
 	close(pipe_fd[1]);
 	close(input_fd);
 	args = ft_split(argv[1], ' ');
-	if (!args || !*args)
+	if (args == NULL || args[0] == NULL)
 		error_msg_exit("command parse error");
-	paths = get_paths(envp);
-	cmd_path = find_cmd_path(args[0], paths);
-	execute_cmd(cmd_path, args, paths, envp);
+	path_dirs = get_path_dirs(envp);
+	cmd_path = find_cmd_path(args[0], path_dirs);
+	execute_cmd(cmd_path, args, path_dirs, envp);
 }
